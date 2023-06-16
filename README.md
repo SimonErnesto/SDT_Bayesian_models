@@ -3,7 +3,7 @@
 <p>The present repository contains codes for data simulation and analysis for three signal detection theory (SDT) analyses assessed in a Bayesian workflow manner. </p>
 
 <p>
-These repositories were of great help:
+These resources were of great help:
 <p>
 1) https://github.com/junpenglao/Bayesian-Cognitive-Modeling-in-Pymc3
 </p>
@@ -162,7 +162,7 @@ Besides the reparametrized parameters, all other elements in the model remain as
 ROC curves plots with AUC measures also indicate better approximations of models 2 and 3.
 
 <p align="center">
-	<img src="model_posteriors/ROC_plots.png" width="600" height="600" />
+	<img src="model_posteriors/roc_plots.png" width="600" height="600" />
 </p>
 
 
