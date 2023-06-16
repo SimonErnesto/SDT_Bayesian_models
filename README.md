@@ -199,3 +199,6 @@ Lynn, S. K., & Barrett, L. F. (2014). “Utilizing” Signal Detection Theory. P
 <p>
 Pardo, L. (2018). Statistical Inference Based on Divergence Measures. CRC Press.
 </p>
+<p>
+Vehtari, A., Gelman, A., & Gabry, J. (2017). Practical Bayesian model evaluation using leave-one-out cross-validation and WAIC. Statistics and Computing, 27(5), 1413–1432. https://doi.org/10.1007/s11222-016-9696-4
+</p>
