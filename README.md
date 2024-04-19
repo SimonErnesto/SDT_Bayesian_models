@@ -138,31 +138,31 @@ Besides the reparametrized parameters, all other elements in the model remain as
 <p> We run prior predictive checks (see prior_predictions folder), which show that priors have good coverage (see image below). We do not calibrate priors as we want to test the fixed priors from the Base Model and see how much the priors from models 1 and 2 can adapt to the "true" values of simulated <i>d'</i> and <i>c</i>.  </p>
 
 <p align="center">
-	<img src="02_prior_predictions/prior_plots.png" width="600" height="500" />
+	<img src="02_prior_predictions/prior_plots.png" width="700" height="400" />
 </p>
 
 <p> After this, we sampled all models using Markov chain Monte Carlo (MCMC) No U-turn sampling (NUTS) with 1000 tuning steps, 1000 samples, 4 chains. You can see model_convergence folder for all details (i.e. r_hats, ess, etc.), but image below provides a general summary of posteriors and rank plots, indicating good convergence. </p>
 
 <p align="center">
-	<img src="04_model_convergence/rank_plots.png" width="650" height="500" />
+	<img src="04_model_convergence/rank_plots.png" width="700" height="600" />
 </p>
 
 <p> Next we perform a precision analysis, to see whether precision is good enough after 100 samples (i.e. 100 per group). All models reached a reasonable precision of around 0.1. </p>
 
 <p align="center">
-	<img src="03_precision_analysis/precision_plots.png" width="700" height="500" />
+	<img src="03_precision_analysis/precision_plots.png" width="700" height="400" />
 </p>
 
 <p> After this, we assessed posteriors via scatter plots and Hellinger <i>H<sup>2</sup></i> distance measure (see Pardo, 2018), to see how much the posterior distributions of <i>d'</i> and <i>c</i> differed from their observed (simulated) counterparts. Image below summarises these results.  </p>
 
 <p align="center">
-	<img src="05_model_posteriors/posterior_plots.png" width="700" height="500" />
+	<img src="05_model_posteriors/posterior_plots.png" width="700" height="400" />
 </p>
 
 ROC curves plots with AUC measures also indicate better approximations of models 2 and 3.
 
 <p align="center">
-	<img src="05_model_posteriors/roc_plots.png" width="600" height="600" />
+	<img src="05_model_posteriors/roc_plots.png" width="700" height="400" />
 </p>
 
 
