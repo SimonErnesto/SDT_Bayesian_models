@@ -66,8 +66,8 @@ def compile_mod(hit, signal, fa, noise):
     ##basic model
     with pm.Model(coords=coords) as model:
         
-        hit_id = pm.Data("hit", hit.flatten(), dims="obs_id")
-        fa_id = pm.Data("fa", fa.flatten(), dims="obs_id")
+        hit_id = pm.Data("hit", hit.flatten(), dims="obs_id", mutable=False)
+        fa_id = pm.Data("fa", fa.flatten(), dims="obs_id", mutable=False)
         
         d = pm.Normal('d', 0.0, 1.0, shape=hit.shape) #discriminability d'
         
@@ -83,7 +83,8 @@ def compile_mod(hit, signal, fa, noise):
 
 
 ### define sampling arguments
-sample_kwargs = {"draws":1000, "tune":1000, "chains":4, "cores":12, "random_seed":33, 'nuts_sampler':'numpyro'}#, "cores":1, "init":'advi'}
+sample_kwargs = {"draws":2000, "tune":2000, "chains":4, "cores":12, "target_accept":0.95, 
+                 "random_seed":33, "nuts_sampler":'numpyro'}#, "init":'advi'}
 with compile_mod(hit,signal,fa,noise) as mod:
     idata = pm.sample(**sample_kwargs, idata_kwargs={"log_likelihood": True} )
 

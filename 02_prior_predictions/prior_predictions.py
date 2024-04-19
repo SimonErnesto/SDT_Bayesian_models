@@ -62,30 +62,6 @@ def Phi(x):
     return 0.5 + 0.5 * pm.math.erf(x / pm.math.sqrt(2))
 
 
-# basic Model
-with pm.Model() as mod_base:
-    
-    d = pm.Normal('d', 0.0, 1, shape=(g,p)) #discriminability d'
-    
-    c = pm.Normal('c', 0.0, 1, shape=(g,p)) #bias c
-    
-    H = pm.Deterministic('H', Phi(0.5*d - c)) # hit rate
-    F = pm.Deterministic('F', Phi(-0.5*d - c)) # false alarm rate
-    
-    yh = pm.Binomial('yh', p=H, n=sig, observed=hits) # sampling for Hits, sig is number of signal trials
-    yf = pm.Binomial('yf', p=F, n=noi, observed=fas) # sampling for FAs, noi is number of noise trials
-
-with mod_base:
-    ppc_base = pm.sample_prior_predictive(1000, random_seed=33)
-
-base_summ = az.summary(ppc_base, hdi_prob=0.9)    
-base_summ_like = az.summary(ppc_base.prior_predictive, hdi_prob=0.9)   
-base_summ = pd.concat([base_summ, base_summ_like]) 
-base_summ.to_csv("mod1_prior_predictive_summary.csv")
-
-ppc_base = ppc_base.stack(sample = ['chain', 'draw']).prior_predictive
-
-
     
 # multilevel Model with varying priors for d and c
 with pm.Model() as mod_var:
@@ -112,7 +88,7 @@ with mod_var:
 var_summ = az.summary(ppc_var, hdi_prob=0.9)    
 var_summ_like = az.summary(ppc_var.prior_predictive, hdi_prob=0.9)   
 var_summ = pd.concat([var_summ, var_summ_like]) 
-var_summ.to_csv("mod2_prior_predictive_summary.csv")
+var_summ.to_csv("mod1_prior_predictive_summary.csv")
 
 ppc_var = ppc_var.stack(sample = ['chain', 'draw']).prior_predictive
 
@@ -157,7 +133,7 @@ with mod_lkj:
 lkj_summ = az.summary(ppc_lkj, hdi_prob=0.9)    
 lkj_summ_like = az.summary(ppc_lkj.prior_predictive, hdi_prob=0.9)   
 lkj_summ = pd.concat([lkj_summ, lkj_summ_like]) 
-lkj_summ.to_csv("mod3_prior_predictive_summary.csv")
+lkj_summ.to_csv("mod2_prior_predictive_summary.csv")
      
 ppc_lkj = ppc_lkj.stack(sample = ['chain', 'draw']).prior_predictive
 
@@ -174,64 +150,6 @@ plt.rcParams['lines.linewidth'] = 4
 plt.rcParams['lines.markerfacecolor'] = 'w'
 plt.rcParams['lines.markersize'] = 10
 plt.rcParams['lines.markeredgewidth'] = 2
-
-
-###### Plot prior predictive for base model (model 1)
-h_base = ppc_base['yh'].values #predicted hits
-f_base = ppc_base['yf'].values #predicted false alarms
-
-fig, axs = plt.subplots(2, 2, figsize=(10,10))
-
-axs[0,0].set_ylim(0,30)
-axs[0,0].hist(hits[0], color="purple", bins=100, label="Observed")
-samples = np.random.choice(np.arange(h_base[0].shape[1]), 50)
-for s in samples:
-    axs[0,0].hist(h_base[0,:,s], color="g", alpha=0.01, bins=100) 
-axs[0,0].hist(h_base[0,:,1], color="g", alpha=0.2, bins=100, label="Predicted") 
-axs[0,0].set_xlabel("Hits")
-axs[0,0].set_ylabel("Frequency")
-axs[0,0].legend(loc="upper center")
-axs[0,0].set_title("Group 1 (high)")
-
-axs[0,1].set_ylim(0,30)
-axs[0,1].hist(hits[1], color="purple", bins=100, label="Observed")
-samples = np.random.choice(np.arange(h_base[1].shape[1]), 50)
-for s in samples:
-    axs[0,1].hist(h_base[1,:,s], color="g", alpha=0.01, bins=100) 
-axs[0,1].hist(h_base[1,:,1], color="g", alpha=0.2, bins=100, label="Predicted") 
-axs[0,1].set_xlabel("Hits")
-axs[0,1].legend(loc="upper center")
-axs[0,1].set_title("Group 2 (low)")
-
-axs[1,0].set_ylim(0,30)
-axs[1,0].hist(fas[0], color="purple", bins=100, label="Observed")
-samples = np.random.choice(np.arange(f_base[0].shape[1]), 50)
-for s in samples:
-    axs[1,0].hist(f_base[0,:,s], color="g", alpha=0.01, bins=100) 
-axs[1,0].hist(f_base[0,:,1], color="g", alpha=0.2, bins=100, label="Predicted") 
-axs[1,0].set_xlabel("False Alarms")
-axs[1,0].set_ylabel("Frequency")
-axs[1,0].legend(loc="upper center")
-#axs[1,0].set_title("Group 1 (high)")
-
-axs[1,1].set_ylim(0,30)
-axs[1,1].hist(fas[1], color="purple", bins=100, label="Observed")
-samples = np.random.choice(np.arange(f_base[1].shape[1]), 50)
-for s in samples:
-    axs[1,1].hist(f_base[1,:,s], color="g", alpha=0.01, bins=100) 
-axs[1,1].hist(f_base[1,:,1], color="g", alpha=0.2, bins=100, label="Predicted") 
-axs[1,1].set_xlabel("False Alarms")
-axs[1,1].legend(loc="upper center")
-#axs[1,1].set_title("Group 2 (low)")
-
-axs[0,0].text(s="A", x=-5, y=35, size=24)
-axs[0,0].text(s="Model 1 (Base Model)", x=-1, y=35, size=22)
-
-plt.tight_layout()
-plt.savefig("mod1_prior_predictives.png", dpi=800)
-plt.show()
-plt.close()
-
 
 
 ###### Plot prior predictive for varying model (model 2)
@@ -283,11 +201,11 @@ axs[1,1].set_xlabel("False Alarms")
 axs[1,1].legend(loc="upper center")
 #axs[1,1].set_title("Group 2 (low)")
 
-axs[0,0].text(s="B", x=-5, y=35, size=24)
-axs[0,0].text(s="Model 2 (Varying Model)", x=-1, y=35, size=22)
+axs[0,0].text(s="A", x=-5, y=35, size=24)
+axs[0,0].text(s="Model 1 (Varying Model)", x=-1, y=35, size=22)
 
 plt.tight_layout()
-plt.savefig("mod2_prior_predictives.png", dpi=800)
+plt.savefig("mod1_prior_predictives.png", dpi=800)
 plt.show()
 plt.close()
 
@@ -342,11 +260,44 @@ axs[1,1].set_xlabel("False Alarms")
 axs[1,1].legend(loc="upper center")
 #axs[1,1].set_title("Group 2 (low)")
 
-axs[0,0].text(s="C", x=-5, y=35, size=24)
-axs[0,0].text(s="Model 3 (LKJ Model)", x=-1, y=35, size=22)
+axs[0,0].text(s="B", x=-5, y=35, size=24)
+axs[0,0].text(s="Model 2 (LKJ Model)", x=-1, y=35, size=22)
 
 plt.tight_layout()
-plt.savefig("mod3_prior_predictives.png", dpi=800)
+plt.savefig("mod2_prior_predictives.png", dpi=800)
 plt.show()
 plt.close()
 
+
+### models summary
+ppcs = [ppc_var, ppc_lkj]
+names = ['Model 1', 'Model 2']
+group = []
+meas = []
+means = []
+sds = []
+name = []
+for i in range(2):
+    means.append(ppcs[i]['yh'][0].values.mean()) 
+    sds.append(ppcs[i]['yh'][0].values.std())
+    group.append("Group 1")
+    meas.append("Hits")
+    name.append(names[i])
+    means.append(ppcs[i]['yh'][1].values.mean()) 
+    sds.append(ppcs[i]['yh'][1].values.std())
+    group.append("Group 2")
+    meas.append("Hits")
+    name.append(names[i])
+    means.append(ppcs[i]['yf'][0].values.mean()) 
+    sds.append(ppcs[i]['yf'][0].values.std())
+    group.append("Group 1")
+    meas.append("FAs")
+    name.append(names[i])
+    means.append(ppcs[i]['yf'][1].values.mean()) 
+    sds.append(ppcs[i]['yf'][1].values.std())
+    group.append("Group 2")
+    meas.append("FAs")
+    name.append(names[i])
+
+summs = pd.DataFrame({'model':name, 'group':group, 'measure':meas, 'mean':means, 'sd':sds})
+summs.to_csv("ppc_summary.csv", index=False)

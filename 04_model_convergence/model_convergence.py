@@ -68,55 +68,6 @@ def Phi(x):
     return 0.5 + 0.5 * pm.math.erf(x / pm.math.sqrt(2))
 
 
-# basic Model
-with pm.Model() as mod_base:
-    
-    d = pm.Normal('d', 0.0, 1, shape=(g,p)) #discriminability d'
-    
-    c = pm.Normal('c', 0.0, 1, shape=(g,p)) #bias c
-    
-    H = pm.Deterministic('H', Phi(0.5*d - c)) # hit rate
-    F = pm.Deterministic('F', Phi(-0.5*d - c)) # false alarm rate
-    
-    yh = pm.Binomial('yh', p=H, n=sig, observed=hits) # sampling for Hits, sig is number of signal trials
-    yf = pm.Binomial('yf', p=F, n=noi, observed=fas) # sampling for FAs, noi is number of noise trials
-
-with mod_base:
-    idata_base = pm.sample(1000, random_seed=33, nuts_sampler='numpyro')
-
-ener_base = az.plot_energy(idata_base)
-ener_base
-plt.savefig("mo1_energy.png", dpi=300)    
-
-base_summ = az.summary(idata_base, hdi_prob=0.9)
-base_summ.to_csv("mod1_base.csv")
-
-
-fig, ax = plt.subplots(4,2, figsize=(10,10))
-az.plot_trace(idata_base.posterior, var_names=["d", "c", "H", "F"], kind="rank_vlines", axes=ax)
-ax[0,0].title.set(fontsize=18)
-ax[0,1].title.set(fontsize=18)
-ax[1,0].title.set(fontsize=18)
-ax[1,1].title.set(fontsize=18)
-ax[2,0].title.set(fontsize=18)
-ax[2,1].title.set(fontsize=18)
-ax[3,0].title.set(fontsize=18)
-ax[3,1].title.set(fontsize=18)
-ax[0,0].xaxis.set_tick_params(labelsize=16)
-ax[0,1].xaxis.set_tick_params(labelsize=16)
-ax[1,0].xaxis.set_tick_params(labelsize=16)
-ax[1,1].xaxis.set_tick_params(labelsize=16)
-ax[2,0].xaxis.set_tick_params(labelsize=16)
-ax[2,1].xaxis.set_tick_params(labelsize=16)
-ax[3,0].xaxis.set_tick_params(labelsize=16)
-ax[3,1].xaxis.set_tick_params(labelsize=16)
-plt.suptitle("A  Model 1 (Base Model)", x=0.2)
-plt.tight_layout()
-plt.savefig("mod1_rank_plots.png", dpi=800)
-plt.show()
-plt.close()
-
-
 
 # multilevel Model with varying priors for d and c
 with pm.Model() as mod_var:
@@ -143,10 +94,10 @@ with mod_var:
 
 ener_var = az.plot_energy(idata_var)
 ener_var
-plt.savefig("mod2_energy.png", dpi=300)    
+plt.savefig("mod1_energy.png", dpi=300)    
 
 var_summ = az.summary(idata_var, hdi_prob=0.9)
-var_summ.to_csv("mod2_summary.csv")
+var_summ.to_csv("mod1_summary.csv")
 
 fig, ax = plt.subplots(4,2, figsize=(10,10))
 az.plot_trace(idata_var.posterior, var_names=["d", "c", "H", "F"], kind="rank_vlines", axes=ax)
@@ -166,9 +117,9 @@ ax[2,0].xaxis.set_tick_params(labelsize=16)
 ax[2,1].xaxis.set_tick_params(labelsize=16)
 ax[3,0].xaxis.set_tick_params(labelsize=16)
 ax[3,1].xaxis.set_tick_params(labelsize=16)
-plt.suptitle("B  Model 2 (Varying Model)", x=0.2)
+plt.suptitle("A  Model 1 (Varying Model)", x=0.2)
 plt.tight_layout()
-plt.savefig("mod2_rank_plots.png", dpi=800)
+plt.savefig("mod1_rank_plots.png", dpi=800)
 plt.show()
 plt.close()
 
@@ -213,10 +164,10 @@ with mod_lkj:
 
 ener_lkj = az.plot_energy(idata_lkj)
 ener_lkj
-plt.savefig("mod3_energy.png", dpi=300)    
+plt.savefig("mod2_energy.png", dpi=300)    
 
 lkj_summ = az.summary(idata_lkj, hdi_prob=0.9)
-lkj_summ.to_csv("mod3_summary.csv")
+lkj_summ.to_csv("mod2_summary.csv")
 
 fig, ax = plt.subplots(6,2, figsize=(10,14))
 az.plot_trace(idata_lkj.posterior, var_names=["ρ high", "ρ low", "d", "c", "H", "F"], 
@@ -245,8 +196,8 @@ ax[4,0].xaxis.set_tick_params(labelsize=16)
 ax[4,1].xaxis.set_tick_params(labelsize=16)
 ax[5,0].xaxis.set_tick_params(labelsize=16)
 ax[5,1].xaxis.set_tick_params(labelsize=16)
-plt.suptitle("C  Model 3 (LKJ Model)", x=0.2)
+plt.suptitle("B  Model 2 (LKJ Model)", x=0.2)
 plt.tight_layout()
-plt.savefig("mod3_rank_plots.png", dpi=800)
+plt.savefig("mod2_rank_plots.png", dpi=800)
 plt.show()
 plt.close()

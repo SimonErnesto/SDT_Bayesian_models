@@ -58,12 +58,18 @@ def Phi(x):
     return 0.5 + 0.5 * pm.math.erf(x / pm.math.sqrt(2))
 
 
-# basic Model
-with pm.Model() as mod_base:
+# multilevel Model with varying priors for d and c
+with pm.Model() as mod_var:
     
-    d = pm.Normal('d', 0.0, 1, shape=(g,p)) #discriminability d'
+    dl = pm.Normal('dl', 0.0, 1.0)
+    dz = pm.Normal('dz', 0.0, 1.0, shape=(g,p)) 
+    ds = pm.HalfNormal('ds', 1.0)
+    d = pm.Deterministic('d', dl + dz*ds) #discriminability d'
     
-    c = pm.Normal('c', 0.0, 1, shape=(g,p)) #bias c
+    cl = pm.Normal('cl', 0.0, 1.0)
+    cz = pm.Normal('cz', 0.0, 1.0, shape=(g,p)) 
+    cs = pm.HalfNormal('cs', 1.0)
+    c = pm.Deterministic('c', cl + cz*cs) #bias c
     
     H = pm.Deterministic('H', Phi(0.5*d - c)) # hit rate
     F = pm.Deterministic('F', Phi(-0.5*d - c)) # false alarm rate
@@ -71,7 +77,7 @@ with pm.Model() as mod_base:
     yh = pm.Binomial('yh', p=H, n=sig, observed=hits) # sampling for Hits, sig is number of signal trials
     yf = pm.Binomial('yf', p=F, n=noi, observed=fas) # sampling for FAs, noi is number of noise trials
 
-with mod_base:
+with mod_var:
     idata = pm.sample(1000, random_seed=33, nuts_sampler='numpyro')
     
 pos = idata.stack(sample = ['chain', 'draw']).posterior
@@ -81,7 +87,6 @@ d_pos_low = pos['d'][1,:,:].values
 
 c_pos_high = pos['c'][0,:,:].values
 c_pos_low = pos['c'][1,:,:].values
-
 
 def H2(a,b):
     h2 = []
@@ -96,6 +101,7 @@ def H2(a,b):
     return np.array(h2)
 
     
+
 simi_d_high = H2(d_high, d_pos_high) 
 simi_d_low = H2(d_low, d_pos_low) 
 
@@ -174,7 +180,7 @@ axs[1,1].set_xlabel("Simulated Participants")
 #axs[1,1].set_title("Group 2 (low)")
 axs[1,1].spines[['right', 'top']].set_visible(False)
 axs[0,0].text(s="A", x=-20, y=5, size=24)
-axs[0,0].text(s="Model 1 (Base Model)", x=-10, y=5, size=20)
+axs[0,0].text(s="Model 1 (Varying Model)", x=-10, y=5, size=20)
 plt.tight_layout()
 plt.savefig("mod1_posteriors.png", dpi=800)
 plt.show()
@@ -228,7 +234,6 @@ axs[0].plot(xpm[0],xpm[0], color='k', linestyle=":", linewidth=2, alpha=0.5)
 axs[0].set_xlabel("False Alarm Rate")
 axs[0].set_ylabel("Hit Rate")
 axs[0].grid(0.1)
-axs[0].set_axisbelow(True)
 axs[0].legend(loc="lower right")
 axs[0].set_title("Group 1 (high)")
 axs[0].spines[['right', 'top']].set_visible(False)
@@ -239,12 +244,11 @@ axs[1].plot(xpm[1],xpm[1], color='k', linestyle=":", linewidth=2, alpha=0.5)
 axs[1].set_xlabel("False Alarm Rate")
 axs[1].set_ylabel("Hit Rate")
 axs[1].grid(0.1)
-axs[1].set_axisbelow(True)
 axs[1].legend(loc="lower right")
 axs[1].set_title("Group 2 (low)")
 axs[1].spines[['right', 'top']].set_visible(False)
 axs[0].text(s="A", x=-0.2, y=1.3, size=24)
-axs[0].text(s="Model 1 (Base Model)", x=-0.1, y=1.3, size=20)
+axs[0].text(s="Model 1 (Varying Model)", x=-0.1, y=1.3, size=20)
 plt.tight_layout()
 plt.savefig("mod1_ROC.png", dpi=800)
 plt.show()

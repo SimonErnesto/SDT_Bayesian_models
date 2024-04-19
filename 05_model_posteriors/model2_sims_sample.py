@@ -3,6 +3,7 @@ import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
 import pymc as pm
+import pytensor.tensor as at
 import arviz as az
 import pandas as pd
 
@@ -58,35 +59,65 @@ def Phi(x):
     return 0.5 + 0.5 * pm.math.erf(x / pm.math.sqrt(2))
 
 
-# multilevel Model with varying priors for d and c
-with pm.Model() as mod_var:
+# Model with LKJ correlations
+with pm.Model() as mod_lkj:
     
-    dl = pm.Normal('dl', 0.0, 1.0)
-    dz = pm.Normal('dz', 0.0, 1.0, shape=(g,p)) 
-    ds = pm.HalfNormal('ds', 1.0)
-    d = pm.Deterministic('d', dl + dz*ds) #discriminability d'
+    rho_high = pm.LKJCorr("rho_high", n=g, eta=2.0)
+    d_high_sd = pm.HalfNormal("d_high_sd", 1)
+    c_high_sd = pm.HalfNormal("c_high_sd", 1)
+    d_high_mean = pm.Normal("d_high_mean", 0, 1)
+    c_high_mean = pm.Normal("c_high_mean", 0, 1)
+    high_cov = at.stack([[d_high_sd**2, rho_high[0] * d_high_sd * c_high_sd],
+                         [rho_high[0] * d_high_sd * c_high_sd, c_high_sd**2]])
+    high_means = at.stack([d_high_mean, c_high_mean])
+    high = pm.MvNormal("high", mu=high_means, cov=high_cov, shape=(p,g))
+    cov_high = pm.Deterministic("cov_high", high_cov)
     
-    cl = pm.Normal('cl', 0.0, 1.0)
-    cz = pm.Normal('cz', 0.0, 1.0, shape=(g,p)) 
-    cs = pm.HalfNormal('cs', 1.0)
-    c = pm.Deterministic('c', cl + cz*cs) #bias c
+    rho_low = pm.LKJCorr("rho_low", n=g, eta=2.0)
+    d_low_sd = pm.HalfNormal("d_low_sd", 1)
+    c_low_sd = pm.HalfNormal("c_low_sd", 1)
+    d_low_mean = pm.Normal("d_low_mean", 0, 1)
+    c_low_mean = pm.Normal("c_low_mean", 0, 1)
+    low_cov = at.stack([[d_low_sd**2, rho_low[0] * d_low_sd * c_low_sd],
+                         [rho_low[0] * d_low_sd * c_low_sd, c_low_sd**2]])
+    low_means = at.stack([d_low_mean, c_low_mean])
+    low = pm.MvNormal("low", mu=low_means, cov=low_cov, shape=(p,g))
+    cov_low = pm.Deterministic("cov_low", low_cov)
     
-    H = pm.Deterministic('H', Phi(0.5*d - c)) # hit rate
+    d = pm.Deterministic('d', at.stack([high[:,0], low[:,0]]))
+    c = pm.Deterministic('c', at.stack([high[:,1], low[:,1]]))
+    
+    H = pm.Deterministic('H', Phi(0.5*d - c)) # hit rate 
     F = pm.Deterministic('F', Phi(-0.5*d - c)) # false alarm rate
     
-    yh = pm.Binomial('yh', p=H, n=sig, observed=hits) # sampling for Hits, sig is number of signal trials
-    yf = pm.Binomial('yf', p=F, n=noi, observed=fas) # sampling for FAs, noi is number of noise trials
-
-with mod_var:
+    yh = pm.Binomial('yh', p=H, n=sig, observed=hits) # sampling for Hits, S is number of signal trials
+    yf = pm.Binomial('yf', p=F, n=noi, observed=fas) # sampling for FAs, N is number of noise trials
+  
+with mod_lkj:
     idata = pm.sample(1000, random_seed=33, nuts_sampler='numpyro')
     
 pos = idata.stack(sample = ['chain', 'draw']).posterior
 
-d_pos_high = pos['d'][0,:,:].values
-d_pos_low = pos['d'][1,:,:].values
+d_pos_high = pos['high'][:,0,:].values
+d_pos_low = pos['low'][:,0,:].values
 
-c_pos_high = pos['c'][0,:,:].values
-c_pos_low = pos['c'][1,:,:].values
+c_pos_high = pos['high'][:,1,:].values
+c_pos_low = pos['low'][:,1,:].values
+
+
+# def simi(a,b):
+#     def sign(x):
+#         x2 = x.copy()
+#         x2[x2>0] = 1
+#         x2[x2<0] = -1
+#         return x2
+#     c4 = []
+#     for i in range(b.shape[0]):
+#         num = np.sum(sign(a*b[:,i]) * (abs(a) + abs(b[:,i])))
+#         den = 2*np.sum(np.maximum(abs(a),abs(b[:,i])))
+#         c4.append(num/den)
+#     return np.array(c4)
+
 
 def H2(a,b):
     h2 = []
@@ -180,11 +211,10 @@ axs[1,1].set_xlabel("Simulated Participants")
 #axs[1,1].set_title("Group 2 (low)")
 axs[1,1].spines[['right', 'top']].set_visible(False)
 axs[0,0].text(s="B", x=-20, y=5, size=24)
-axs[0,0].text(s="Model 2 (Varying Model)", x=-10, y=5, size=20)
+axs[0,0].text(s="Model 2 (LKJ Model)", x=-10, y=5, size=20)
 plt.tight_layout()
 plt.savefig("mod2_posteriors.png", dpi=800)
 plt.show()
-
 
 
 ##plot ROC
@@ -248,7 +278,7 @@ axs[1].legend(loc="lower right")
 axs[1].set_title("Group 2 (low)")
 axs[1].spines[['right', 'top']].set_visible(False)
 axs[0].text(s="B", x=-0.2, y=1.3, size=24)
-axs[0].text(s="Model 2 (Varying Model)", x=-0.1, y=1.3, size=20)
+axs[0].text(s="Model 2 (LKJ Model)", x=-0.1, y=1.3, size=20)
 plt.tight_layout()
 plt.savefig("mod2_ROC.png", dpi=800)
 plt.show()
@@ -270,8 +300,17 @@ c_high_hdi = az.hdi(c_pos[0].mean(axis=0).T, hdi_prob=0.9).round(2)
 c_low = c_pos[1].mean().round(2)
 c_low_hdi = az.hdi(c_pos[1].mean(axis=0).T, hdi_prob=0.9).round(2)
 
+rho_high_pos = az.extract(idata.posterior)['rho_high'].values
+rho_high = rho_high_pos.mean().round(2)
+rho_high_hdi = az.hdi(rho_high_pos[0], hdi_prob=0.9).round(2)
+
+rho_low_pos = az.extract(idata.posterior)['rho_low'].values
+rho_low = rho_low_pos.mean().round(2)
+rho_low_hdi = az.hdi(rho_low_pos[0], hdi_prob=0.9).round(2)
+
 pos_summ = pd.DataFrame({'model':['Model 1', 'Model 1'], 'group':['high','low'],
                          'd mean':[d_high, d_low], 'd hdi':[d_high_hdi, d_low_hdi], 
-                         'c mean':[c_high, c_low], 'c hdi':[c_high_hdi, c_low_hdi]})
+                         'c mean':[c_high, c_low], 'c hdi':[c_high_hdi, c_low_hdi],
+                         'rho mean':[rho_high, rho_low], 'rho hdi':[rho_high_hdi, rho_low_hdi]})
 
 pos_summ.to_csv("mod2_pos_summary.csv", index=False)

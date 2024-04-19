@@ -77,7 +77,7 @@ Image below shows the summary of simulations as receiving operator characteristi
 
 </p>
 
-<h1> Model 1 </h1>
+<h1> Base Model </h1>
 
 <p> We first implement a Base Model with "fixed" parameters across group and participants. Where groups are group 1 (high sensitivity) and group 2 (low sensitivity). </p>
 <i>
@@ -91,9 +91,9 @@ Image below shows the summary of simulations as receiving operator characteristi
 
 <p> Where, g = groups (1...G, G=2), p = participants (1...P, P = 100),  s = misses + hits, and n = correct rejections (CR) + false alarms (FA). Observations for y<sub>H</sub> are total hits and observations for y<sub>F</sub> are total FAs. Observations are simulated responses from the generative model presented above.</p>
 
-<h1> Model 2  </h1>
+<h1> Model 1  </h1>
 
-<p> We extend the Base Model (Model 1) via a non-centred parametrisation of Gaussian and half-Gaussian distributions. </p>
+<p> We extend the Base Model via a non-centred parametrisation of Gaussian and half-Gaussian distributions. </p>
 <i>
 <p align="center"> d<sub>l</sub> ~ Normal(0, 1) </p>
 <p align="center"> d<sub>z; g,p</sub> ~ Normal(0, 1) </p>
@@ -111,7 +111,7 @@ Image below shows the summary of simulations as receiving operator characteristi
 
 Besides the reparametrized parameters, all other elements in the model remain as in Model 1.
 
-<h1> Model 3 (LKJ Model) </h1>
+<h1> Model 2 (LKJ Model) </h1>
 
 <p> Finally, we build up a model with LKJ (see Lewandowski et al, 2009) correlation priors to assess the association between sensitivity and bias. </p>
 <i>
@@ -135,7 +135,7 @@ Besides the reparametrized parameters, all other elements in the model remain as
 
 
 <h1> Results </h1>
-<p> We run prior predictive checks (see prior_predictions folder), which show that priors have good coverage (see image below). We do not calibrate priors as we want to test the fixed priors from the Base Model and see how much the priors from models 2 and 3 can adapt to the "true" values of simulated <i>d'</i> and <i>c</i>.  </p>
+<p> We run prior predictive checks (see prior_predictions folder), which show that priors have good coverage (see image below). We do not calibrate priors as we want to test the fixed priors from the Base Model and see how much the priors from models 1 and 2 can adapt to the "true" values of simulated <i>d'</i> and <i>c</i>.  </p>
 
 <p align="center">
 	<img src="02_prior_predictions/prior_plots.png" width="600" height="500" />
@@ -173,7 +173,7 @@ ROC curves plots with AUC measures also indicate better approximations of models
 </p>
 
 
-<p> Finally, we conducted a models comparison after using re-LOO on each model (see Vethari et al., 2017, see also: https://python.arviz.org/en/stable/user_guide/pymc_refitting.html). Comparisons indicate higher expected log predictive densities for Model 3. Note that Model 1 has lower in-sample predictive accuracy, which is not ideal. See the model_comparison folder for more details. </p>
+<p> Finally, we conducted a models comparison after using re-LOO on each model (see Vethari et al., 2017, see also: https://python.arviz.org/en/stable/user_guide/pymc_refitting.html). Comparisons indicate higher expected log predictive densities for Model 2. </p>
 
 <p align="center">
 	<img src="07_model_comparison/model_comp_loo.png" width="500" height="300" />
@@ -181,7 +181,7 @@ ROC curves plots with AUC measures also indicate better approximations of models
 
 <h1> Conclusion </h1>
 
-<p> Results indicate that the varying (multilevel) model is an improvement over the base model, but it has minor convergence issues. Model 3, with LKJ priors does not only provides the same multilevel parametric form of Model 2 (though centred), but also includes LKJ priors capable of capturing correlations between parameters (<i>d</i> an <i>c</i>) and converges better. Further, Model 3, which is basically just an extension of previous models (i.e. only changes parametrisation, but contains no new variables), approximates simulated measures as well as Model 2 and shows better predictive accuracy. </p>
+<p> Results indicate that the varying (multilevel) model is an improvement over the base model, but it has minor convergence issues. Model 2, with LKJ priors does not only provides the same multilevel parametric form of Model 1 (though centred), but also includes LKJ priors capable of capturing correlations between parameters (<i>d</i> an <i>c</i>) and converges better. Further, Model 2, which is basically just an extension of previous models (i.e. only changes parametrisation, but contains no new variables), approximates simulated measures as well as Model 1 and shows better predictive accuracy. </p>
 
 <h1> References </h1>
 <p>

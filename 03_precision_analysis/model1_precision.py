@@ -91,12 +91,18 @@ for i in range(len(ps)):
     
     j = i+1
         
-    # basic model
+    # multilevel Model with varying priors for d and c
     with pm.Model() as mod:
         
-        d = pm.Normal('d', 0.0, 1, shape=(g,pi+10)) #discriminability d'
+        dl = pm.Normal('dl', 0.0, 1.0)
+        dz = pm.Normal('dz', 0.0, 1.0, shape=(g,pi+10)) 
+        ds = pm.HalfNormal('ds', 1.0)
+        d = pm.Deterministic('d', dl + dz*ds) #discriminability d'
         
-        c = pm.Normal('c', 0.0, 1, shape=(g,pi+10)) #bias c
+        cl = pm.Normal('cl', 0.0, 1.0)
+        cz = pm.Normal('cz', 0.0, 1.0, shape=(g,pi+10)) 
+        cs = pm.HalfNormal('cs', 1.0)
+        c = pm.Deterministic('c', cl + cz*cs) #bias c
         
         H = pm.Deterministic('H', Phi(0.5*d - c)) # hit rate
         F = pm.Deterministic('F', Phi(-0.5*d - c)) # false alarm rate
@@ -105,7 +111,7 @@ for i in range(len(ps)):
         yf = pm.Binomial('yf', p=F, n=noi[:,:pi+10], observed=fas[:,:pi+10]) # sampling for FAs, noi is number of noise trials
 
     with mod:
-        idata = pm.sample(1000, chains=4, cores=12, random_seed=33, nuts_sampler='numpyro')
+        idata = pm.sample(1000, chains=4, cores=12, target_accept=0.9, random_seed=33, nuts_sampler='numpyro')
         
     pos = idata.stack(sample = ['chain', 'draw']).posterior
     
@@ -120,6 +126,8 @@ for i in range(len(ps)):
     d_low_m.append(d_pos_low.mean())
     d_low_h5.append(h5)
     d_low_h95.append(h95)
+    
+
     
     c_pos_high = pos['c'][0,:,:].values
     h5,h95 = az.hdi(c_pos_high.mean(axis=0), hdi_prob=0.9)
@@ -137,23 +145,22 @@ for i in range(len(ps)):
     obs_d_low.append(d_low[:pi+10].mean())
     obs_c_high.append(c_high[:pi+10].mean())
     obs_c_low.append(c_low[:pi+10].mean())
-
+    
     precis_d_high.append(abs(d_high_h95[i] - d_high_h5[i]))
     precis_d_low.append(abs(d_low_h95[i] - d_low_h5[i]))
     
     precis_c_high.append(abs(c_high_h95[i] - c_high_h5[i]))
     precis_c_low.append(abs(c_low_h95[i] - c_low_h5[i]))
     
-    
-    if j > 1:        
+
+    if j > 1:
         pre_precs = np.array([abs(precis_d_high[i-1] - precis_d_high[i]), 
                               abs(precis_d_low[i-1] - precis_d_low[i]),
                               abs(precis_c_high[i-1] - precis_c_high[i]),
                               abs(precis_c_low[i-1] - precis_c_low[i])])
     if j < 2:
-        pre_precs = np.array([1,1,1,1])
-                              
-    
+        pre_precs = np.array([1,1,1,1])                         
+
     precs = np.array([precis_d_high[i],precis_d_low[i],
                       precis_c_high[i], precis_c_high[i]])
     
@@ -169,6 +176,7 @@ for i in range(len(ps)):
     print("high c precision diff: "+str(pre_precs[2].round(2)))
     print("low c precision diff: "+str(pre_precs[3].round(2)))
         
+
 
 df = pd.DataFrame({"d_high_m":d_high_m, "d_high_h5":d_high_h5, "d_high_h95":d_high_h95, 
                    "d_low_m":d_low_m, "d_low_h5":d_low_h5, "d_low_h95":d_low_h95, 

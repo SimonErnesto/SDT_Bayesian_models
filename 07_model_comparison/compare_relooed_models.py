@@ -19,7 +19,6 @@ os.chdir(os.getcwd())
 file = open("mod1_reloo.obj",'rb')
 mod1_reloo = pd.compat.pickle_compat.load(file)
 
-
 file = open("mod2_reloo.obj",'rb')
 mod2_reloo = pd.compat.pickle_compat.load(file)
 
@@ -27,9 +26,9 @@ file = open("mod3_reloo.obj",'rb')
 mod3_reloo = pd.compat.pickle_compat.load(file)
 
 
-models = {'Base Model':mod1_reloo, 'Varying Model':mod2_reloo, 'LKJ Model':mod3_reloo}
+models = {'Varying Model':mod2_reloo, 'LKJ Model':mod3_reloo}
 
-loo = az.compare(models, ic="loo", scale="log")
+loo = az.compare(models, ic="loo", method='stacking')
 
 
 az.plot_compare(loo, insample_dev=True, figsize=(8,4),

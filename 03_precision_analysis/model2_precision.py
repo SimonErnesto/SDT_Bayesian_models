@@ -2,6 +2,7 @@
 import numpy as np
 from scipy import stats
 import pymc as pm
+import pytensor.tensor as at
 import arviz as az
 import pandas as pd
 
@@ -84,58 +85,71 @@ obs_d_low = []
 obs_c_high = []
 obs_c_low = []
 
-
 for i in range(len(ps)):
     
     pi = ps[i]
     
     j = i+1
-        
-    # multilevel Model with varying priors for d and c
+    
+    # Model with LKJ correlations
     with pm.Model() as mod:
         
-        dl = pm.Normal('dl', 0.0, 1.0)
-        dz = pm.Normal('dz', 0.0, 1.0, shape=(g,pi+10)) 
-        ds = pm.HalfNormal('ds', 1.0)
-        d = pm.Deterministic('d', dl + dz*ds) #discriminability d'
+        rho_high = pm.LKJCorr("rho_high", n=g, eta=2.0)
+        d_high_sd = pm.HalfNormal("d_high_sd", 1)
+        c_high_sd = pm.HalfNormal("c_high_sd", 1)
+        d_high_mean = pm.Normal("d_high_mean", 0, 1)
+        c_high_mean = pm.Normal("c_high_mean", 0, 1)
+        high_cov = at.stack([[d_high_sd**2, rho_high[0] * d_high_sd * c_high_sd],
+                             [rho_high[0] * d_high_sd * c_high_sd, c_high_sd**2]])
+        high_means = at.stack([d_high_mean, c_high_mean])
+        high = pm.MvNormal("high", mu=high_means, cov=high_cov, shape=(pi+10,g))
+        cov_high = pm.Deterministic("cov_high", high_cov)
         
-        cl = pm.Normal('cl', 0.0, 1.0)
-        cz = pm.Normal('cz', 0.0, 1.0, shape=(g,pi+10)) 
-        cs = pm.HalfNormal('cs', 1.0)
-        c = pm.Deterministic('c', cl + cz*cs) #bias c
+        rho_low = pm.LKJCorr("rho_low", n=g, eta=2.0)
+        d_low_sd = pm.HalfNormal("d_low_sd", 1)
+        c_low_sd = pm.HalfNormal("c_low_sd", 1)
+        d_low_mean = pm.Normal("d_low_mean", 0, 1)
+        c_low_mean = pm.Normal("c_low_mean", 0, 1)
+        low_cov = at.stack([[d_low_sd**2, rho_low[0] * d_low_sd * c_low_sd],
+                             [rho_low[0] * d_low_sd * c_low_sd, c_low_sd**2]])
+        low_means = at.stack([d_low_mean, c_low_mean])
+        low = pm.MvNormal("low", mu=low_means, cov=low_cov, shape=(pi+10,g))
+        cov_low = pm.Deterministic("cov_low", low_cov)
         
-        H = pm.Deterministic('H', Phi(0.5*d - c)) # hit rate
+        d = at.stack([high[:,0], low[:,0]])
+        c = at.stack([high[:,1], low[:,1]])
+        
+        H = pm.Deterministic('H', Phi(0.5*d - c)) # hit rate 
         F = pm.Deterministic('F', Phi(-0.5*d - c)) # false alarm rate
         
-        yh = pm.Binomial('yh', p=H, n=sig[:,:pi+10], observed=hits[:,:pi+10]) # sampling for Hits, sig is number of signal trials
-        yf = pm.Binomial('yf', p=F, n=noi[:,:pi+10], observed=fas[:,:pi+10]) # sampling for FAs, noi is number of noise trials
-
+        yh = pm.Binomial('yh', p=H, n=sig[:,:pi+10], observed=hits[:,:pi+10]) # sampling for Hits, S is number of signal trials
+        yf = pm.Binomial('yf', p=F, n=noi[:,:pi+10], observed=fas[:,:pi+10]) # sampling for FAs, N is number of noise trials
+      
     with mod:
         idata = pm.sample(1000, chains=4, cores=12, target_accept=0.9, random_seed=33, nuts_sampler='numpyro')
         
     pos = idata.stack(sample = ['chain', 'draw']).posterior
     
-    d_pos_high = pos['d'][0,:,:].values
+    d_pos_high = pos['high'][:,0,:].values
     h5,h95 = az.hdi(d_pos_high.mean(axis=0), hdi_prob=0.9)
     d_high_m.append(d_pos_high.mean())
     d_high_h5.append(h5)
     d_high_h95.append(h95)
 
-    d_pos_low = pos['d'][1,:,:].values
+    d_pos_low = pos['low'][:,0,:].values
     h5,h95 = az.hdi(d_pos_low.mean(axis=0), hdi_prob=0.9)
     d_low_m.append(d_pos_low.mean())
     d_low_h5.append(h5)
     d_low_h95.append(h95)
     
 
-    
-    c_pos_high = pos['c'][0,:,:].values
+    c_pos_high = pos['high'][:,1,:].values
     h5,h95 = az.hdi(c_pos_high.mean(axis=0), hdi_prob=0.9)
     c_high_m.append(c_pos_high.mean())
     c_high_h5.append(h5)
     c_high_h95.append(h95)
 
-    c_pos_low = pos['c'][1,:,:].values
+    c_pos_low = pos['low'][:,1,:].values
     h5,h95 = az.hdi(c_pos_low.mean(axis=0), hdi_prob=0.9)
     c_low_m.append(c_pos_low.mean())
     c_low_h5.append(h5)
@@ -159,12 +173,11 @@ for i in range(len(ps)):
                               abs(precis_c_high[i-1] - precis_c_high[i]),
                               abs(precis_c_low[i-1] - precis_c_low[i])])
     if j < 2:
-        pre_precs = np.array([1,1,1,1])                         
-
+        pre_precs = np.array([1,1,1,1])                    
+    
     precs = np.array([precis_d_high[i],precis_d_low[i],
                       precis_c_high[i], precis_c_high[i]])
     
-
     print("Run #"+str(i))
     print("high d' precision: "+str(precis_d_high[i].round(2)))
     print("low d' precision: "+str(precis_d_low[i].round(2)))
@@ -176,7 +189,6 @@ for i in range(len(ps)):
     print("high c precision diff: "+str(pre_precs[2].round(2)))
     print("low c precision diff: "+str(pre_precs[3].round(2)))
         
-
 
 df = pd.DataFrame({"d_high_m":d_high_m, "d_high_h5":d_high_h5, "d_high_h95":d_high_h95, 
                    "d_low_m":d_low_m, "d_low_h5":d_low_h5, "d_low_h95":d_low_h95, 
