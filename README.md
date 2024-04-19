@@ -169,14 +169,14 @@ ROC curves plots with AUC measures also indicate better approximations of models
 <p> Additionally, we performed posterior predictive checks, which indicate similar results. In images below, SDI refers to the Sorensen-Dice Index (see Costa, 2021), which measures similarity between variables.  </p>
 
 <p align="center">
-	<img src="06_posterior_predictions/prediction_plots.png" width="700" height="500" />
+	<img src="06_posterior_predictions/prediction_plots.png" width="700" height="400" />
 </p>
 
 
 <p> Finally, we conducted a models comparison after using re-LOO on each model (see Vethari et al., 2017, see also: https://python.arviz.org/en/stable/user_guide/pymc_refitting.html). Comparisons indicate higher expected log predictive densities for Model 2. </p>
 
 <p align="center">
-	<img src="07_model_comparison/model_comp_loo.png" width="500" height="300" />
+	<img src="07_model_comparison/model_comp_loo.png" width="600" height="300" />
 </p>
 
 <h1> Conclusion </h1>
